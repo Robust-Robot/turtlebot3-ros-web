@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+
+<script type="text/javascript" src="./roslibjs/current/roslib.min.js"></script>
+<!-- http://static.robotwebtools.org/roslibjs/current/roslib.min.js -->
+
+<script type="text/javascript" src="./nipplejs/0.7.3/nipplejs.js"></script>
+<!--https://cdnjs.cloudflare.com/ajax/libs/nipple-->
+
+<script type="text/javascript" type="text/javascript">
+  var ros = new ROSLIB.Ros({
+    url : 'ws://localhost:9090'
+  }); //localhost
+
+  ros.on('connection', function() {
+    document.getElementById("status").innerHTML = "Connected";
+  });
+
+  ros.on('error', function(error) {
+    document.getElementById("status").innerHTML = "Error";
+  });
+
+  ros.on('close', function() {
+    document.getElementById("status").innerHTML = "Closed";
+  });
+
+
+  var txt_listener = new ROSLIB.Topic({
+    ros : ros,
+    name : '/txt_msg',
+    messageType : 'std_msgs/String'
+  });
+
+  txt_listener.subscribe(function(m) {
+    document.getElementById("msg").innerHTML = m.data;
+    move(0.05,0);
+  });
+
+  cmd_vel_listener = new ROSLIB.Topic({
+    ros : ros,
+    name : "/cmd_vel",
+    messageType : 'geometry_msgs/Twist'
+  });
+
+  var sensor_state_listener = new ROSLIB.Topic({
+    ros : ros,
+    name : "/battery_state", // "/sensor_state",
+    messageType : 'sensor_msgs/BatteryState' //turtlebot3_msgs/SensorState'
+  });
+  var imu_listener = new ROSLIB.Topic({
+    ros : ros,
+    name : "/imu",
+    messageType : 'sensor_msgs/Imu'
+  });
+
+  sensor_state_listener.subscribe(function(m) {
+    // console.log('received msg on '+sensor_state_listener.name+':'+m.battery);
+    document.getElementById("battery_p").innerHTML=(m.percentage*100).toString()+'%';//battery;
+    document.getElementById("battery_v").innerHTML = m.voltage+'V'; 
+  });
+  imu_listener.subscribe(function(m) {
+    document.getElementById("imu_linear").innerHTML='('+m.linear_acceleration.x+','+m.linear_acceleration.y+','+m.linear_acceleration.z+')';
+    document.getElementById("imu_angular").innerHTML='('+m.angular_velocity.y+','+m.angular_velocity.x+','+m.angular_velocity.z+')';
+  });
+
+  move = function (linear, angular) {
+    var twist = new ROSLIB.Message({
+      linear: {
+        x: linear,
+        y: 0,
+        z: 0
+      },
+      angular: {
+        x: 0,
+        y: 0,
+        z: angular
+      }
+    });
+    cmd_vel_listener.publish(twist);
+  }
+
+  //var manager; // manager is not defined 
+  createJoystick = function () {
+      var options = {
+        zone: document.getElementById('zone_joystick'),
+        threshold: 0.1,
+        position: { left: 50 + '%' },
+        mode: 'static',
+        size: 150,
+        color: '#000000',
+      };
+      manager = nipplejs.create(options);
+
+      linear_speed = 0;
+      angular_speed = 0;
+
+      //self.manager.on('start', function (event, nipple) {
+      //  console.log("Movement start");
+      //});
+	manager.on('start', function (event, nipple) {
+          console.log("Movement start");
+	  timer = setInterval(function () {
+	    move(linear_speed, angular_speed);
+	  }, 100); //25
+	});
+
+      //self.manager.on('move', function (event, nipple) {
+      //  console.log("Moving");
+      //});
+      manager.on('move', function (event, nipple) {
+          console.log("Moving");
+	  max_linear = 1.0;// 5.0; // m/s
+	  max_angular =1.0;// 2.0; // rad/s
+	  max_distance = 75.0; // pixels;
+	  linear_speed = Math.sin(nipple.angle.radian) * max_linear * nipple.distance/max_distance;
+	  angular_speed = -Math.cos(nipple.angle.radian) * max_angular * nipple.distance/max_distance;
+          //TJ:fixed 2
+          if (linear_speed>0.1) {
+             linear_speed=0.1;//Math.floor(linear_speed*100)/100;//.toFixed(2);
+          }
+          if (linear_speed<-0.1) {
+             linear_speed=-0.1;
+          }
+          //angular_speed =0;//Math.floor(angular_speed*100)/100;//.toFixed(2);
+       });
+
+	manager.on('end', function () {
+	  console.log("Movement end");
+	  if (timer) {
+	    clearInterval(timer);
+	  }
+	  self.move(0, 0);
+	});
+      //self.manager.on('end', function () {
+      //  console.log("Movement end");
+      //});
+  }
+
+  window.onload = function () {
+    createJoystick();
+  }
+</script>
+</head>
+
+<body>
+  <h1>Simple ROS User Interface</h1>
+  <p>Connection status: <span id="status"></span></p>
+  <p>Last /txt_msg received: <span id="msg"></span></p>
+  <div id="zone_joystick" style="position: relative;"></div>
+  <div>Sensor: <span id="sensor_state"></span></div>
+  <div>IMU:<br/>linear acceleration  <span id="imu_linear"></span></div>
+  <div>angualr velocity <span id="imu_angular"></span></div>
+  <div>Battery: <span id="battery_v"></span><br/><span id="battery_p"></span></div>
+</body>
+</html>

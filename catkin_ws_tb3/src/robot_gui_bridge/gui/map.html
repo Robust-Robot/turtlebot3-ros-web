@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+
+<!--http://static.robotwebtools.org-->
+<script type="text/javascript" src="./easeljs/current/easeljs.min.js"></script>
+<script type="text/javascript" src="./EventEmitter2/current/eventemitter2.min.js"></script>
+<script type="text/javascript" src="./roslibjs/current/roslib.min.js"></script>
+<script type="text/javascript" src="./ros2djs/current/ros2d.min.js"></script>
+
+<script type="text/javascript">
+  /**
+   * Setup all visualization elements when the page is loaded.
+   */
+  function init() {
+    // Connect to ROS.
+    var ros = new ROSLIB.Ros({
+      url : 'ws://localhost:9090'
+    });
+
+    // Create the main viewer.
+    var viewer = new ROS2D.Viewer({
+      divID : 'map',
+      width : 800,
+      height : 500
+    });
+
+    // Setup the map client.
+    var gridClient = new ROS2D.OccupancyGridClient({
+      ros : ros,
+      rootObject : viewer.scene
+    });
+    // Scale the canvas to fit to the map
+    gridClient.on('change', function(){
+      viewer.scaleToDimensions(gridClient.currentGrid.width, gridClient.currentGrid.height);
+      //2022.6.30
+      viewer.shift(gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);
+    });
+  }
+</script>
+</head>
+
+<body onload="init()">
+  <h1>Simple Map Example For Prof. Weigan</h1>
+  <div id="map"></div>
+</body>
+</html>
