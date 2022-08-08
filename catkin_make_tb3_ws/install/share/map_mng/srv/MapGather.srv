@@ -1,0 +1,4 @@
+string action
+string[] params
+---
+int32 result
