@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Map Editor</title>
+<script type="text/javascript" src="../ros/easeljs/current/easeljs.min.js"></script>
+<script type="text/javascript" src="../ros/EventEmitter2/current/eventemitter2.min.js"></script>
+<script type="text/javascript" src="../ros/roslibjs/current/roslib.min.js"></script>
+<script type="text/javascript" src="../ros2d_n.js"></script>
+<script type="text/javascript" src="../ros/rosmap.js"></script>
+
+<script>
+
+ function init() {
+	// Connect to ROS.
+	var ros = new ROSLIB.Ros({
+		url : 'ws://localhost:9090'
+	});
+	// Create the main viewer.
+		var viewer = new ROS2D.Viewer({
+			divID : 'map',
+			width : 800,
+			height : 500
+		});
+	var viewer2 = new ROS2D.Viewer({
+			divID : 'map2',
+			width : 800,
+			height : 500
+		});
+
+		// Add zoom to the viewer.
+		var zoomView = new ROS2D.ZoomView({
+			rootObject : viewer.scene
+		});
+		// Add panning to the viewer.
+		var panView = new ROS2D.PanView({
+			rootObject : viewer.scene
+		});
+
+		// Setup the map client.
+		var gridClient = new ROS2D.OccupancyGridClient({
+			ros : ros,
+			rootObject : viewer.scene
+		});
+
+
+	var c=document.getElementById("mycanvas");
+	var context= c.getContext("2d");
+	var map = new Object();
+	map.context= context;
+        //var map = JSON.stringify(obj);
+	//testing
+	context.fillStyle='#c0c0c0';
+	context.fillRect(0,0,400,400);
+	var editor=null;
+	var editorMap=null;
+
+	init_editor=function(){
+		
+		editor=new ROSMAP.Editor({
+			ros : ros,
+			client : gridClient,
+			topic : '/map', //map_metadata
+			//rootObject : viewer.scene
+		});
+		//call
+		editor.sendMap();
+/*
+		editorMap=new ROSMAP.EditorMap({
+			rootObject : viewer2.scene, //'mycanvas',
+			currentGrid : gridClient2
+		});
+		//*/
+
+	// Scale the canvas to fit to the map
+		gridClient.on('change', function() {
+			viewer.scaleToDimensions(gridClient.currentGrid.width, gridClient.currentGrid.height);
+			viewer.shift(gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);
+			
+		});
+
+	};
+	setTimeout(function(){
+		init_editor();
+	},1800);
+
+
+	/*var ros_map=new ROSMAP.square({
+		EditorMap : map,
+		width : 240,
+		height : 240,
+		lineWidth : 10
+	});
+	//*/ 
+	return;
+ }
+
+</script>
+</head>
+
+<body onload="init()">
+	<h2>Map Editor</h2>
+	<div id="map" name="map" ></div>
+	<div id="map2" name="map2" ></div>
+	<canvas id="mycanvas" name="mycanvas" width="400" height="400">Your browser does not support canvas.</canvas>
+
+</body>
+</html>
+

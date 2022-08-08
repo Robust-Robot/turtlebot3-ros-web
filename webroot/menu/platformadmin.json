@@ -1,0 +1,141 @@
+{
+	"status": 0,
+	"msg": "ok",
+  "data": [
+    {
+      "id": 1,
+      "name": "参数设置",
+      "icon": "&#xe6ae;",
+      "url": "",
+      "children": [
+        {
+          "id": 10,
+          "name": "全局参数",
+          "icon": "",
+          "url": "pages/setup_global.html"
+        },{
+          "id": 11,
+          "name": "地图参数",
+          "icon": "",
+          "url": "pages/setup_map.html"
+        },{
+          "id": 12,
+          "name": "导航参数",
+          "icon": "",
+          "url": "pages/setup_nav.html"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "地图管理",
+      "icon": "&#xe723;",
+      "url": "",
+      "children": [
+        {
+          "id": 21,
+          "name": "新建地图",
+          "icon": "",
+          "url": "pages/map_add.html"
+        },{
+          "id": 22,
+          "name": "地图列表",
+          "icon": "",
+          "url": "pages/map_list.html"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "巡检管理",
+      "icon": "&#xe684;",
+      "url": "",
+      "children": [
+	{
+          "id": 50,
+          "name": "设定巡检路线",
+          "icon": "",
+          "url": "pages/patrol_plan/set_plan.html"
+        },{
+	  "id": 52,
+          "name": "执行巡检路线",
+          "icon": "",
+          "url": "pages/patrol_plan/set_plan.html"
+	},{
+	  "id": 53,
+          "name": "巡检路线列表",
+          "icon": "",
+          "url": "pages/patrol_plan/set_plan.html"
+	}
+      ]
+    },
+    {
+      "id": 6,
+      "name": "计划任务",
+      "icon": "&#xe68d;",
+      "url": "",
+      "children": [
+	{
+          "id": 60,
+          "name": "制定计划",
+          "icon": "",
+          "url": "pages/patrol_plan/set_plan.html"
+        },{
+	  "id": 52,
+          "name": "执行计划",
+          "icon": "",
+          "url": "pages/patrol_plan/set_plan.html"
+	},{
+	  "id": 53,
+          "name": "任务列表",
+          "icon": "",
+          "url": "pages/patrol_plan/set_plan.html"
+	}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "导航管理",
+      "icon": "&#xe757;",
+      "url": "",
+      "children": [
+        {
+          "id": 31,
+          "name": "手动远程控制",
+          "icon": "",
+          "url": "pages/navigation.html"
+        },{
+          "id": 32,
+          "name": "定时方式控制",
+          "icon": "",
+          "url": "/pages/nav_timer.html"
+        },{
+          "id": 33,
+          "name": "手动控制Demo",
+          "icon": "",
+          "url": "nav_manual.html"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "命令行",
+      "icon": "&#xe687;",
+      "url": "",
+      "children": [{
+          "id": 41,
+          "name": "SLAM",
+          "url": "http://localhost:8080"
+        },{
+          "id": 42,
+          "name": "Save Map",
+          "url": "http://localhost:8080"
+        },{
+          "id": 43,
+          "name": "Navigation(AMCL)",
+          "url": "http://localhost:8080"
+        }
+      ]
+    }
+  ]
+}

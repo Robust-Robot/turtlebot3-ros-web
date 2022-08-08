@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLAM</title>
+    <link rel="stylesheet" href="../lib/layuimini/lib/layui-v2.5.5/css/layui.css" media="all">
+    <link rel="stylesheet" href="../lib/layuimini/css/public.css" media="all">
+
+    <style>
+        body {
+            background-color: #ffffff;
+        }
+
+        .div_input {
+            float: left;
+		width:60px;
+        }
+
+        .no_width {
+            width: auto;
+        }
+	.vslider_div {position: fixed;bottom: 10px;left:10px;z-index:999;width:10px;height:80%;
+  	}
+	.slider_div {position: fixed;bottom: 10px;left:10px;z-index:999;width:50%;height:10px;
+  	}
+	.control_div {position: fixed;bottom: 10px;right:30px;z-index:100;width:10%;height:80px;
+  	}
+	td{padding:2px;}
+    </style>
+    
+    <script src="../js/interface.js"></script>
+    <script src="../js/localstorage.js"></script>
+    <script type="text/javascript" src="../ros/easeljs/current/easeljs.min.js"></script>
+    <script type="text/javascript" src="../ros/EventEmitter2/current/eventemitter2.min.js"></script>
+    <script type="text/javascript" src="../ros/roslibjs/current/roslib.min.js"></script>
+    <script type="text/javascript" src="../ros/ros2djs/current/ros2d.js"></script>
+<!--    <script type="text/javascript" src="../navigation_2d.min.js"></script>-->
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../lib/layuimini/lib/layui-v2.5.5/layui.all.js" charset="utf-8"></script>
+
+<!--
+    <script>
+        //setPermanentCookie("step_?")
+        var step_x=getCookie("step_x") || '0.01';
+	var step_z=getCookie("step_z") || '0.01';
+	var base_x=getCookie("base_x") || '0.0';
+	var base_z=getCookie("base_z") || '0.0';
+
+        if (step_x== null || step_x == 'null'){ //it did equal to 'null'
+            step_x ='0.01';
+        }
+	if (step_z== null || step_z == 'null'){ //it did equal to 'null'
+            step_z ='0.01';
+        }
+	if (base_x== null || base_x == 'null'){ //it did equal to 'null'
+            base_x ='0.0';
+        }
+	if (base_z== null || base_z == 'null'){ //it did equal to 'null'
+            base_z ='0.0';
+        }
+        $('input[name=step_x]').val(step_x);
+        $('input[name=step_z]').val(step_z);
+	$('input[name=base_x]').val(base_x);
+        $('input[name=base_z]').val(base_z);//getQueryVariable("ws_address"));
+    </script>
+-->
+    <script type="text/javascript">
+	var ros;
+	  var istep_x=getCookie("step_x") || '0.01'; //0.01;
+		istep_x=parseFloat(istep_x);
+	  var istep_z=getCookie("step_z") || '0.02'; //0.02;
+		istep_z=parseFloat(istep_z);
+  	  var linear_x_step=getCookie("base_x") || '0.04'; //0.0;
+		linear_x_step=parseFloat(linear_x_step);
+  	  var angular_z_step=getCookie("base_z") || '0.03'; //0.0;
+		angular_z_step=parseFloat(angular_z_step);
+    
+        /**
+         * Setup all visualization elements when the page is loaded.
+         */        
+        function init() {
+		$('input[name=step_x]').val(istep_x);
+	        $('input[name=step_z]').val(istep_z);
+    	
+            // Connect to ROS.
+            ros = new ROSLIB.Ros({
+                url: 'ws://localhost:9090'
+            });
+
+            ros.on('connection', function () {
+                document.getElementById("status").innerHTML = "Connected";
+            });
+
+            ros.on('error', function (error) {
+                document.getElementById("status").innerHTML = "Error";
+            });
+
+            ros.on('close', function () {
+                document.getElementById("status").innerHTML = "Closed";
+            });
+
+            // Create the main viewer.
+            var viewer = new ROS2D.Viewer({
+                divID: 'map',
+                width: 808,
+                height: 550
+            });
+
+	    // Add zoom to the viewer.
+		var zoomView = new ROS2D.ZoomView({
+			rootObject : viewer.scene
+		});
+    	    // Add panning to the viewer.
+		var panView = new ROS2D.PanView({
+			rootObject : viewer.scene
+		});
+
+            // Setup the map client.
+            var gridClient = new ROS2D.OccupancyGridClient({
+                ros: ros,
+                rootObject: viewer.scene,
+                // Use this property in case of continuous updates
+                continuous: true
+            });
+
+	panMap = function(pos_step_x,pos_step_y) { //startPan
+				panView.startPan(gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);panView.pan(gridClient.currentGrid.pose.position.x+pos_step_x, gridClient.currentGrid.pose.position.y+pos_step_y);//event.stageX, event.stageY);
+			//viewer.shift(
+                    //gridClient.currentGrid.pose.position.x,
+                    //gridClient.currentGrid.pose.position.y
+                //);		
+	};
+	zoomMap = function(_scale) { //startZoom
+		zoomView.startZoom(gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);
+		var dy =_scale;// event.stageY - startPos.y;
+		var zoom = 1 + 10*Math.abs(dy) / viewer.scene.canvas.clientHeight;
+		if (dy < 0)
+			zoom = 1 / zoom;
+		zoomView.zoom(zoom);
+		//viewer.scaleToDimensions(
+                //    gridClient.currentGrid.width,
+                 //   gridClient.currentGrid.height
+                //);
+	};
+
+	dozoom =function(_scale) {
+		var dy=2;
+		switch (_scale) {
+			case 'in':
+				zoomMap(-dy);
+				break;
+			case 'out':
+				zoomMap(+dy);
+				break;
+			default:
+				break;
+		}		
+	};
+	dopan = function(_o) {
+		var dy=30;
+		switch (_o) {
+			case 'left':
+				panMap(+dy,0,0);
+				break;
+			case 'right':
+				panMap(-dy,0);
+				break;
+			case 'up':
+				panMap(0,dy);
+				break;
+			case 'down':
+				panMap(0,-dy);
+				break;
+			default:
+				break;
+		}
+	};
+
+            // Scale the canvas to fit to the map
+            gridClient.on('change', function () {
+                ///*
+		viewer.scaleToDimensions(
+                    gridClient.currentGrid.width,
+                    gridClient.currentGrid.height
+                );
+                viewer.shift(
+                    gridClient.currentGrid.pose.position.x,
+                    gridClient.currentGrid.pose.position.y
+                );
+		//*/
+            });
+
+            cmd_vel_listener = new ROSLIB.Topic({
+                ros: ros,
+                name: "/cmd_vel",
+                messageType: "geometry_msgs/Twist"
+            });	
+
+	    //pan map
+	    btnPanLeft=document.getElementById("btnpan_left");
+		btnPanLeft.onclick= function(event){dopan('left');}
+        }
+        //end of init()
+
+
+        move = function (linear, angular) {
+            var twist = new ROSLIB.Message({
+                linear: {
+                    x: linear,
+                    y: 0,
+                    z: 0
+                },
+                angular: {
+                    x: 0,
+                    y: 0,
+                    z: angular
+                }
+            });
+            cmd_vel_listener.publish(twist);
+        };
+
+        move_it = function (_origin) {
+            switch (_origin) {
+                case 'w':
+		    linear_x_step+=istep_x;
+                    self.move(linear_x_step, angular_z_step);
+                    break;
+                case 'x':
+		    linear_x_step-=istep_x;
+                    self.move(linear_x_step, angular_z_step);
+                    break;
+                case 'a':
+		    angular_z_step+=istep_z;
+                    self.move(linear_x_step, angular_z_step);
+                    break;
+                case 'd':
+		    angular_z_step-=istep_z;
+                    self.move(linear_x_step, angular_z_step);
+                    break;
+                case 's': //stop
+		    linear_x_step=0.0;
+		    angular_z_step=0.0;
+                    self.move(linear_x_step, angular_z_step);
+                    break;
+                default:
+                    break;
+            }
+        };
+
+	doaction = function (action) {
+		var act_ok=0;
+		switch(action) {
+			case 'start':
+				act_ok=1;
+				break;
+			case 'stop':
+				act_ok=1;
+				break;
+			default:
+		}
+		if (act_ok==1){
+			console.log('calling service map gathering action');
+			dynaRecClient = new ROSLIB.Service({
+				ros : ros,
+				name : '/MapGather',
+				serviceType : 'map_mng/MapGather'
+			});
+			var request = new ROSLIB.ServiceRequest({
+				action: action
+			});
+			// Calling a service
+			dynaRecClient.callService(request, function(result) {
+				console.log('Result for service call on '+ dynaRecClient.name+ ': '
+				+ JSON.stringify(result.result));
+				//dat=JSON.parse(result.maps[0]);
+				alert("Request return value:"+JSON.stringify(result.result));
+			});
+			//setTimeout(function(){ alert("指令已发出，请稍候查看。Return value:"+JSON.stringify(result.result)); }, 3000);
+
+			window.alert("指令已发出，请稍候查看。Return value:"+JSON.stringify(result.result));
+		}
+		return;
+	};
+
+	save_it = function () {
+	    //save map
+	    console.log("call service to save map...");
+		dynaRecClient = new ROSLIB.Service({
+			ros : ros,
+			name : '/SaveMap',
+			serviceType : 'map_mng/SaveMap'
+		});
+		var fn='weigan-666';
+		fn=document.getElementById("map_filename").value;
+
+		var request = new ROSLIB.ServiceRequest({
+			file_name: fn
+		});
+		// Calling a service
+		dynaRecClient.callService(request, function(result) {
+			console.log('Result for service call on '+ dynaRecClient.name+ ': '
+			+ JSON.stringify(result.result));
+			//dat=JSON.parse(result.maps[0]);
+		});
+		window.alert("地图保存成功，请查看列表。FileName="+fn);
+		return;
+	};
+
+	get_step = function() {
+            var tmp=document.getElementById("step_x").value; //jQuery("#step_x").val();
+	    var tmpz=document.getElementById("step_z").value; 
+	    istep_x=parseFloat(tmp);
+	    istep_z=parseFloat(tmpz);
+
+    	    console.log("istep_x=",istep_x,"istep_z=",istep_z);
+	};
+    </script>
+</head>
+
+<body onload="init()">
+    <!--<p>
+        Use any method to publish continuous updates to topic /map and use this
+        page to visualize updates. Follow these commands:
+    </p>
+    <ol>
+        <li><tt>roscore</tt></li>
+        <li><tt>(method of choice to publish to /map)</tt></li>
+        <li><tt>roslaunch rosbridge_server rosbridge_websocket.launch</tt></li>
+    </ol>-->
+<div class="layui-form layuimini-form">
+        <div class="layui-form-item">
+	    <label class="layui-form-label">状态： <span id="status"></span></label>
+            <label class="layui-form-label">文件名：</label>
+            <div class="layui-input-inline">
+		<input type="text" id="map_filename" name="map_filename" lay-verify="required" value="map-666" width="100" class="layui-input" /></div>
+	    <button onclick="save_it('map1');" class="layui-btn">2保存地图</button>
+    	    <button onclick="doaction('start');" class="layui-btn" style="margin-left:50px;">1启动采集</button>
+	    <button onclick="doaction('stop');" class="layui-btn">3结束</button>
+        </div>
+        <div class="layui-row" style="width:850px;">
+                    <div class="layui-col-xs3">
+                        <label class="layui-form-label" style="width:60px;">stepX:</label>
+		<div class="layui-input-inline" style="width:100px;">
+		<input type ="number" id="step_x" name="step_x" min="-0.20" max="0.20" step="0.01" value=0.01  class="div_input" />
+		</div>
+                    </div>
+                    <div class="layui-col-xs3">
+                        <label class="layui-form-label" style="width:60px;">stepZ:</label>
+		<div class="layui-input-inline">
+		<input type ="number" id="step_z" name="step_z" min="-0.20" max="0.20" step="0.02" value=0.01  class="div_input" /></div>
+                    </div>
+                    <div class="layui-col-xs1">
+                        <button onclick="get_step();" class="layui-btn layui-btn-sm data-add-btn" lay-event="get_step">
+	            0设定</button>
+                    </div>
+		<div class="layui-col-xs5" style="padding-top:30px;">
+			<button type="button" class="layui-btn layui-btn-sm" id="btnpan_left" ><i class="layui-icon layui-icon-left"></i></button>
+			<button type="button" class="layui-btn layui-btn-sm" onclick="dopan('right');"><i class="layui-icon layui-icon-right"></i></button>
+			<button type="button" class="layui-btn layui-btn-sm" onclick="dopan('up');"><i class="layui-icon layui-icon-up"></i></button><button type="button" class="layui-btn layui-btn-sm" onclick="dopan('down');"><i class="layui-icon layui-icon-down"></i></button>
+			<button type="button" class="layui-btn layui-btn-sm" onclick="dozoom('out');"><i class="layui-icon layui-icon-screen-restore"></i></i></button><button type="button" class="layui-btn layui-btn-sm" onclick="dozoom('in');"><i class="layui-icon layui-icon-screen-full"></i></i></button>
+		</div>
+	</div>
+    </div>
+ 
+	<div id="sliderSpeedX" class="vslider_div"></div>
+    <table id="control_panel" class="control_div" >
+	<tr><td>&nbsp;</td><td>
+	<button onclick="move_it('w');" class="layui-btn"  lay-event="move_forward">
+            <i class="layui-icon layui-icon-triangle-d" style="display: inline-block;transform: rotate(180deg);"></i>
+        </button></td>
+<td></td>
+        </tr>
+	<tr>
+<td><button onclick="move_it('a');" class="layui-btn " lay-event="move_left">
+            <i class="layui-icon layui-icon-triangle-r" style="display: inline-block;transform: rotate(180deg);"></i>
+        </button></td>
+<td><button onclick="move_it('s');" class="layui-btn"  lay-event="move_stop">
+            <i class="layui-icon layui-icon-circle-dot"></i>
+        </button></td>
+<td><button onclick="move_it('d');" class="layui-btn " lay-event="move_right">
+            <i class="layui-icon layui-icon-triangle-r"></i>
+        </button></td>
+</tr><tr>
+<td></td>
+<td><button onclick="move_it('x');" class="layui-btn" lay-event="move_backward">
+            <i class="layui-icon layui-icon-triangle-d"></i>
+        </button></td>
+<td></td>
+	</tr>
+    </table>
+	<div id="sliderSpeedZ" class="slider_div"></div>
+    <div id="map"></div>
+
+<script>
+layui.use(['slider'], function() {
+    //当滑块为普通模式，回调返回的 value 是一个数值
+    layui.slider.render({
+      elem: '#sliderSpeedX'
+	,value: 0
+	,min: -20
+	,max: 20
+	,theme: '#1E9FFF'
+	,type: 'vertical' //垂直滑块
+      ,change: function(value){
+        //console.log(value) //动态获取滑块数值
+        //do something
+	//max=0.20
+	linear_x_step=value/100;//0.20*value/100;
+	//angular_z_step=value/10;//0.20*value/100;
+        self.move(linear_x_step, angular_z_step);
+      }
+    });
+    layui.slider.render({
+      elem: '#sliderSpeedZ'
+	,value: 0
+	,min: -20
+	,max: 20
+	,theme: '#5FB878'
+      ,change: function(value){
+        //console.log(value) //动态获取滑块数值
+        //do something
+	//max=0.20
+	//linear_x_step=value/100;//0.20*value/100;
+	angular_z_step=-value/10;//0.20*value/100;
+        self.move(linear_x_step, angular_z_step);
+      }
+    });
+
+    //当滑块为范围模式，回调返回的 value 是一个数组，包含开始和结尾
+    //layui.slider.render({
+    //  elem: '#sliderTest1'
+    //  ,range: true
+     // ,change: function(value){
+     //   console.log(value[0]) //得到开始值
+      //  console.log(value[1]) //得到结尾值
+        //do something
+     // }
+    //});
+});
+</script>
+</body>
+
+</html>

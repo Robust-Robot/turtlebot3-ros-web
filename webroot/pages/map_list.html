@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Maps列表</title>
+	<meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="../lib/layuimini/lib/layui-v2.5.5/css/layui.css" media="all">
+    <link rel="stylesheet" href="../lib/layuimini/css/public.css" media="all">
+
+	<link rel="stylesheet" href="../static/css/font.css">
+    <link rel="stylesheet" href="../static/css/weadmin.css">
+    <script type="text/javascript" src="../lib/layui/layui.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../js/jquery-1.10.2.min.js"></script>
+    
+    <script src="../js/interface.js"></script>
+    <script src="../js/localstorage.js"></script>
+<script type="text/javascript" src="../ros/easeljs/current/easeljs.min.js"></script>
+<script type="text/javascript" src="../ros/EventEmitter2/current/eventemitter2.min.js"></script>
+<script type="text/javascript" src="../ros/roslibjs/current/roslib.min.js"></script>
+
+<script src="../lib/layuimini/lib/layui-v2.5.5/layui.js" charset="utf-8"></script>
+<script type="text/javascript">
+	var table;
+	var ws_address='ws://localhost:9090';
+	var ros ;
+	var dynaRecClient;
+	var strJson='{"code": 0,  "msg": "",  "count": 3,  "data": [{"id": 1,"image":"mymap","resolution":1,"origin":1,"negate":0.1,"occupied_thresh":"0","free_thresh":"0"}]}';
+	var dat= JSON.parse(strJson); //JSON.stringify(strJson);
+
+	function load_global() {
+            ws_address=getCookie("ws_address") || 'ws://localhost:9090';
+            if (ws_address== null || ws_address == 'null'){ //it did equal to 'null'
+                ws_address ='ws://localhost:9090';
+            }
+        }
+
+	function loadMap(map_file_name) {
+	        // var that=this;
+		dynaRecClient = new ROSLIB.Service({
+			ros : ros,
+			name : '/MapGather',
+			serviceType : 'map_mng/MapGather'
+		});
+
+		var request = new ROSLIB.ServiceRequest({
+			action: 'loadmap',
+			params: [map_file_name]
+		});
+		console.log('Call service...loadmap:');
+		// Calling a service
+		dynaRecClient.callService(request, function(result) {
+			console.log('Result for service call on '+ dynaRecClient.name+ ': '
+			+ JSON.stringify(result)); //result.result
+		});
+		alert("Cmd sent OK, please checkit later. Good luck! --by Tiger@2022");
+	}
+	
+	function call_add_two_ints() {
+	        // var that=this;
+		dynaRecClient = new ROSLIB.Service({
+			ros : ros,
+			name : '/add_two_ints',
+			serviceType : 'rospy_tutorials/AddTwoInts'
+		});
+
+		var request = new ROSLIB.ServiceRequest({
+			a: 1,
+			b: 2
+		});
+		console.log('Call service...Adds:');
+		// Calling a service
+		dynaRecClient.callService(request, function(result) {
+			console.log('Result for service call on '+ dynaRecClient.name+ ': '
+			+ JSON.stringify(result.sum));
+		});
+	}
+
+	function refreshTable() {
+		table = layui.table;
+
+		table.render({
+		    elem: '#currentTableId',
+		    //url: '../lib/layuimini/api/user.json',
+		    data:dat.data,
+		    toolbar: '#toolbarDemo',
+		    defaultToolbar: ['filter', 'exports', 'print', {
+		        title: '刷新',
+		        layEvent: 'LAYTABLE_Refresh',
+		        icon: 'layui-icon-tips'
+		    }],
+		    cols: [[
+		        //{type: "checkbox", width: 50, fixed: "left"},
+		        {type: "numbers", width: 50, title: 'ID', sort: true, align: "center"},                
+		        {field: 'image', width: 200, title: '地图名称'},
+			{field: 'resolution', width: 100, title: '分辨率'},
+		        {field: 'negate', width: 80, title: 'negate'},
+		        {field: 'origin', width: 150, title: 'origin'},
+			{field: 'occupied_thresh', width: 100, title: 'occupiedThresh'},
+		        {field: 'free_thresh', width: 100, title: 'freeThresh'},
+		        {fixed: "right", title: '操作', minWidth: 50, templet: '#currentTableBar', align: "center" }
+		    ]],
+		    limits: [10, 15, 20, 25, 50, 50],
+		    limit: 10,
+		    page: true
+		});
+	}
+
+
+	function loadData() {
+	        // var that=this;
+		dynaRecClient = new ROSLIB.Service({
+			ros : ros,
+			name : '/GetMaps',
+			serviceType : 'map_mng/GetMaps'
+		});
+
+		var request = new ROSLIB.ServiceRequest({
+			key: 1234
+		});
+		console.log('Call service...GetMaps:');
+		// Calling a service
+		dynaRecClient.callService(request, function(result) {
+			console.log('Result for service call on '+ dynaRecClient.name+ ': '
+			+ JSON.stringify(result.maps)); //sum
+			dat=JSON.parse(result.maps[0]);
+		});
+
+		//refresh table
+		refreshTable();
+	}
+
+	function reconnect_ros() {
+		// Connect to ROS.
+		ros = new ROSLIB.Ros({
+			url : ws_address
+		});
+
+		ros.on('connection', function() {
+	           console.log('Connected to websocket server.');
+		   //call_add_two_ints();
+		   //loadData(); //ros
+	        });
+	   
+	        ros.on('error', function(error) {
+	           console.log('Error connecting to websocket server: ', error);
+	        });
+	   
+	        ros.on('close', function() {
+	           console.log('Connection to websocket server closed.');
+	        });
+
+		// Setting dynamic_reconfigurable parameters using ROS services
+		
+		//loadData(ros);
+	}
+
+	/**
+	 * Setup all visualization elements when the page is loaded. 
+	 */
+	function init() {
+		load_global();
+		setTimeout(function() {
+		    // function code goes here
+		    reconnect_ros();
+			loadData();
+		}, 200);	
+	}
+</script>
+</head>
+<body onload="init()">
+	<h1>地图列表</h1>
+	<button onclick="loadData();" class="layui-btn layui-btn-sm data-add-btn" lay-event="get_step">
+            Refresh
+        </button>
+	<button onclick="call_add_two_ints();" class="layui-btn layui-btn-sm data-add-btn" lay-event="get_step">
+            add two ints
+        </button>
+	<button onclick="reconnect_ros();" class="layui-btn layui-btn-sm data-add-btn" lay-event="get_step">
+            reconnect ros
+        </button>
+	<div id="map"></div>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+	<button onclick="loadData();return false;"; class="layui-btn layui-btn-primary" ><i class="layui-icon"></i> 查 询</button>
+
+        <fieldset class="table-search-fieldset layui-hide">
+            <legend>搜索信息</legend>
+            <div style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane" action="">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">Map名称</label>
+                            <div class="layui-input-inline">
+                                <input type="text" name="fullname" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon"></i> 查 询</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+
+	<table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+	<script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-xs data-count-edit" lay-event="loadmap">加载</a>
+	    <a class="layui-btn layui-btn-xs data-count-edit" lay-event="edit">修改</a>
+            <a class="layui-btn layui-btn-xs layui-btn-danger data-count-delete" lay-event="delete">删除</a>
+        </script>
+</div>
+<script>
+    setTimeout(function() {
+		    // function code goes here
+
+    layui.use(['form', 'table'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table;
+
+        table.render({
+            elem: '#currentTableId',
+            //url: '../lib/layuimini/api/user.json',
+	    data:dat.data,
+            toolbar: '#toolbarDemo',
+            defaultToolbar: ['filter', 'exports', 'print', {
+                title: '刷新',
+                layEvent: 'LAYTABLE_Refresh',
+                icon: 'layui-icon-tips'
+            }],
+            cols: [[
+                //{type: "checkbox", width: 50, fixed: "left"},
+                {type: "numbers", width: 50, title: 'ID', sort: true, align: "center"},                
+                {field: 'image', width: 200, title: '地图名称'},
+		{field: 'resolution', width: 100, title: '分辨率'},
+                {field: 'negate', width: 80, title: 'negate'},
+                {field: 'origin', width: 150, title: 'origin'},
+		{field: 'occupied_thresh', width: 100, title: 'occupiedThresh'},
+                {field: 'free_thresh', width: 100, title: 'freeThresh'},
+                {fixed: "right", title: '操作', minWidth: 50, templet: '#currentTableBar', align: "center" }
+            ]],
+            limits: [10, 15, 20, 25, 50, 50],
+            limit: 10,
+            page: true
+        });
+ 
+	//toolbar listening event
+	table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+
+	    if (obj.event === 'loadmap') {
+		//Tiger@2022.7.22: call service to load map
+		
+		var params = Object.keys(data).map(function (key) {
+                    return encodeURIComponent(key) + "=" + encodeURIComponent(data[key]);
+                }).join("&");
+		var map_name=encodeURIComponent(data["image"]);
+		alert("Loading map..."+params+map_name);
+
+		loadMap(map_name);
+            } else if (obj.event === 'edit') {
+		alert("Not allowed.");
+		return;
+
+                //转换Url参数
+                var params = Object.keys(data).map(function (key) {
+                    return encodeURIComponent(key) + "=" + encodeURIComponent(data[key]);
+                }).join("&");
+
+                var index = layer.open({
+                    title: '编辑Map',
+                    type: 2,
+                    shade: 0.2,
+                    maxmin:true,
+                    shadeClose: true,
+                    area: ['800px', '580px'],
+                    content: 'user/edit.html?' + params,
+                });
+                $(window).on("resize", function () {
+                    layer.full(index);
+                });
+                return false;
+            } else if (obj.event === 'delete') {
+                layer.confirm('请确认是否删除该信息', function (index) {
+                    obj.del();
+                    layer.close(index);
+                });
+            }
+        });
+
+     });
+//timeout
+}, 100);
+</script>
+</body>
+</html>
+

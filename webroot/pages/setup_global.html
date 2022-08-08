@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <link rel="stylesheet" href="../lib/layuimini/lib/layui-v2.5.5/css/layui.css" media="all">
+    <link rel="stylesheet" href="../lib/layuimini/css/public.css" media="all">
+    <style>
+        body {
+            background-color: #ffffff;
+        }
+
+        .div_input {
+            float: left;
+        }
+
+        .no_width {
+            width: auto;
+        }
+    </style>
+    <script src="../js/interface.js"></script>
+    <script src="../js/localstorage.js"></script>
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../lib/layuimini/lib/layui-v2.5.5/layui.all.js" charset="utf-8"></script>
+</head>
+<body>
+    <h2>Global Settings</h2>
+    <div class="layui-form layuimini-form">
+        <div class="layui-form-item">
+            <label class="layui-form-label">ws_address</label>
+            <div class="layui-input-block">
+                <input type="text" name="ws_address" lay-verify="required" class="layui-input" value="ws://localhost:9090">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button id="confirm" class="layui-btn" lay-submit lay-filter="saveBtn">保存</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        //setPermanentCookie("ws_address")
+        var ws_add=getCookie("ws_address") || 'ws://localhost:9090';
+        if (ws_add== null || ws_add == 'null'){ //it did equal to 'null'
+            ws_add ='ws://localhost:9090';
+        }
+        $('input[name=ws_address]').val(ws_add);//getQueryVariable("ws_address"));
+    </script>
+    <script>
+        layui.use(['form', 'layer'], function () {
+            //layui.use(['form', 'layedit', 'laydate', 'upload'], function () {
+            var form = layui.form,
+                layer = layui.layer,
+                //laydate = layui.laydate,
+                $ = layui.$;
+                //upload = layui.upload;
+
+            form.on('submit(saveBtn)', function (data) {
+                console.log(data.field);
+                var ws_add=data.field["ws_address"];
+                try{
+                    setPermanentCookie("ws_address",ws_add);
+		    //update 不到主页,改parent
+                    //ws_address=ws_add;
+                    if (window.parent.load_global!=undefined){
+                        window.parent.load_global();
+                    }
+
+		    layer.msg("保存成功");
+                } catch (ex){
+                    layer.msg(ex.msg,{icon:6,time:3000});
+                }
+                //data.field["password"] = $.md5(data.field["password"]);
+                // $.ajax({
+                //     url: 'http://www.dn.cn:8448/User/UserLogin',
+                //     method: 'post',
+                //     data: data.field,
+                //     success: function (res) {
+                //         if (res.code == 0) {
+                //             layer.msg("新建成功:" + res.msg)
+                //         } else {
+                //             layer.msg(res.msg);
+                //         }
+                //     }
+                // })
+            })
+        });
+    </script>
+</body>
+</html>
+

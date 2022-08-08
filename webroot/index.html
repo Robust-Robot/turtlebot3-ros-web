@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="renderer" content="webkit|ie-comp|ie-stand">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <title>ROS管理平台</title>
+    <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="./static/css/font.css">
+    <link rel="stylesheet" href="./static/css/weadmin.css">
+    <script type="text/javascript" src="./lib/layui/layui.js" charset="utf-8"></script>
+    <script type="text/javascript" src="js/jquery-1.10.2.min.js"></script>
+    
+    <script src="./js/interface.js"></script>
+    <script src="./js/localstorage.js"></script>
+    <script type="text/javascript">
+        function init() {
+            //load global var
+	    load_global();
+	}
+
+	function load_global() {
+            ws_address=getCookie("ws_address") || 'ws://localhost:9090';
+            if (ws_address== null || ws_address == 'null'){ //it did equal to 'null'
+                ws_address ='ws://localhost:9090';
+            }
+        }
+    </script>
+</head>
+
+<body onload="init()">
+    <!-- 顶部开始 -->
+    <div class="container">
+        <div class="logo">
+            <a href="#" id="title"></a>
+        </div>
+        <div class="left_open">
+            <i title="展开左侧栏" class="layui-icon layui-icon-shrink-right"></i>
+        </div>
+        <ul class="layui-nav right" lay-filter="nav_welcome_info">
+	    <li class="layui-nav-item">
+                <a href="javascript:;" id="link_ws">
+		    <i class="layui-icon layui-icon-unlink"></i>Status</a>
+		<dl class="layui-nav-child">
+		    <dd><a class="loginout">连接</a></dd>
+		    <dd><a class="loginout">断开</a></dd>
+		</dl>
+            </li>
+            <li class="layui-nav-item">
+                <a href="javascript:;" id="pageUserName"></a>
+                <dl class="layui-nav-child">
+                    <!-- 二级菜单 -->
+                    <dd>
+                        <a class="loginout">个人信息</a>
+                    </dd>
+                    <dd>
+                        <a class="loginout">切换帐号</a>
+                    </dd>
+                    <dd>
+                        <a class="loginout">退出</a>
+                    </dd>
+                </dl>
+            </li>
+        </ul>
+    </div>
+    <!-- 顶部结束 -->
+    <!-- 中部开始 -->
+    <!-- 左侧菜单开始 -->
+    <div class="left-nav">
+        <div id="side-nav"></div>
+    </div>
+    <!-- 左侧菜单结束 -->
+    <!-- 右侧主体开始 -->
+    <div class="page-content">
+        <div class="layui-tab tab" lay-filter="wenav_tab" id="WeTabTip" lay-allowclose="true">
+            <ul class="layui-tab-title" id="tabName">
+                <li>主页</li>
+		<li>ROS</li>
+            </ul>
+            <div class="layui-tab-content">
+                <div class="layui-tab-item layui-show">
+                    <iframe src='./pages/home.html' frameborder="0" scrolling="yes" class="weIframe"></iframe>
+                </div>
+		<div class="layui-tab-item layui-show">
+                    <iframe src='./pages/ros_main.html' frameborder="0" scrolling="yes" class="weIframe"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="page-content-bg"></div>
+    <!-- 右侧主体结束 -->
+    <!-- 中部结束 -->
+    <!--Tab菜单右键弹出菜单-->
+    <ul class="rightMenu" id="rightMenu">
+        <li data-type="fresh">刷新</li>
+        <li data-type="current">关闭当前</li>
+        <li data-type="other">关闭其它</li>
+        <li data-type="all">关闭所有</li>
+    </ul>
+    <!-- 底部开始 -->
+    <div class="footer">
+        <div class="copyright" id="copyright"></div>
+    </div>
+    <!-- 底部结束 -->
+    <script type="text/javascript">
+        function GetQueryString(name)
+        {
+            var reg = new RegExp("(^|&)"+ name +"=([^&]*)(&|$)");
+            var r = window.location.search.substr(1).match(reg);
+            if(r!=null)return  unescape(r[2]); return "";
+        }
+        var agencyId = GetQueryString("agencyId");
+
+        var menu = null;
+
+        layui.config({
+            base: './static/js/'
+            ,version: '101100'
+        }).extend({ //设定模块别名
+            admin: 'admin'
+            ,menu: 'menu'
+        });
+
+        layui.use(['jquery', 'admin', 'menu','element'], function(){
+            var $ = layui.jquery,
+                admin = layui.admin,
+                element = layui.element;
+                menu = layui.menu;
+
+            //$.post(host_path + usercheck_interface, function (res) {
+            //    console.log(res);
+            //    if (res.code != 0) {
+            //        location.href = "userLogin.html?agencyId=" + agencyId;
+            //    }
+            //});
+
+            if (getDocCookie("uname") != "") {
+                menu.getMenu('./menu/platformadmin.json'); // '/File/Menu'
+                setTimeout(function() {
+                    reflashMenu();
+                }, 1500);
+                //setInterval("GetMenuByTime()",3000);
+                $("#pageUserName").empty();
+                $("#pageUserName").append(getDocCookie("uname"))
+            } else {
+                //location.href = "userLogin.html?agencyId=" + agencyId;
+            }
+
+            element.on('nav(nav_welcome_info)', function (data) {
+                if (data.context.innerHTML == "连接"){
+                    //$(this).find("i").innerHTML("&#xe760"); //75f
+		    $("#link_ws").find("i")[0].className="layui-icon layui-icon-link";
+                    $(this).className="layui-bg-green";
+                }
+		if (data.context.innerHTML == "断开"){
+                    $("#link_ws").find("i")[0].className="layui-icon layui-icon-unlink"; //75f
+                    $(this).className="layui-bg-green";
+                }
+		if (data.context.innerHTML == "个人信息")
+                {
+                    // var index = layer.open({
+                    //     title: '个人信息',
+                    //     type: 2,
+                    //     shade: 0.2,
+                    //     maxmin: true,
+                    //     shadeClose: false,
+                    //     area: ['90%', '90%'],
+                    //     content: 'pages/myinfo.html?agencyId=" + agencyId',
+                    // });
+                }
+                if (data.context.innerHTML == "切换帐号")
+                {
+                    exit_login("您确定要切换账号么？");
+                }
+                if (data.context.innerHTML == "退出")
+                {
+                    exit_login("您确定要退出么？");
+                }
+            });
+
+            
+
+            function exit_login(msg) {
+                loading = layer.load(1);
+                layer.open({
+                    content: msg,
+                    btn: ['确定', '取消'],
+                    yes: function (index, layero) {
+                        $("#rightMenu li:eq(3)").click()
+                        document.cookie = "uname=";
+                        document.cookie = "uid=";
+                        //$.post(host_path + userlogout_interface, function (res) {
+                        //    console.log(res);
+                        //});
+                        top.location = "userlogin.html?agencyId=" + agencyId;
+                        layer.close(index);
+                    },
+                    btn2: function(index, layero) {
+                        if (loading != null) {
+                            layer.close(loading);
+                            loading = null;
+                        }
+                    },
+                    cancel: function(index, layero) {
+                        if (loading != null) {
+                            layer.close(loading);
+                            loading = null;
+                        }
+                    }
+                });
+            }
+
+            function getDocCookie(cookie_name) {
+                var allcookies = document.cookie;
+                var cookie_pos = allcookies.indexOf(cookie_name);
+                if (cookie_pos != -1) {
+                    cookie_pos = cookie_pos + cookie_name.length + 1;
+                    var cookie_end = allcookies.indexOf(";", cookie_pos);
+                    if (cookie_end == -1) {
+                        cookie_end = allcookies.length;
+
+                    }
+                    var value = unescape(allcookies.substring(cookie_pos, cookie_end));
+                }
+                return value;
+            }
+        });
+
+        function reflashMenu() {
+            menu.reflash();
+        }
+
+        if (agencyId == null || agencyId == '') {
+            $("#title").text("ROS管理平台");
+            $("#title").attr("href","./index.html");
+            $("#copyright").text("Copyleft ©2022 WebPlatform for Robot Operating System (V1.0), powered by iFeng(曲院风荷)");            
+            $("#copyright").attr("href","http://www.suncai.net");
+        } else if (agencyId == "202002") {
+            
+        } else if(agencyId == "202003") {
+        
+        } else {
+            $("#title").text("ROS平台");
+            $("#title").attr("href","./index.html");
+            $("#copyright").text("Copyleft ©2022 曲院风荷 ROS Web v1.0 ");            
+            $("#copyright").attr("href","http://www.suncai.net");
+        }
+    </script>
+</body>
+</html>

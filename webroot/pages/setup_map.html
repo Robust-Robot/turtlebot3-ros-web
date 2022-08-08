@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <link rel="stylesheet" href="../lib/layuimini/lib/layui-v2.5.5/css/layui.css" media="all">
+    <link rel="stylesheet" href="../lib/layuimini/css/public.css" media="all">
+    <style>
+        body {
+            background-color: #ffffff;
+        }
+
+        .div_input {
+            float: left;
+	    font-size:11pt;
+	    height: 35px;
+            width: 150px;
+        }
+
+        .no_width {
+            width: auto;
+        }
+    </style>
+    <script src="../js/interface.js"></script>
+    <script src="../js/localstorage.js"></script>
+    <script src="../js/jquery-1.10.2.min.js"></script>
+    <script src="../lib/layuimini/lib/layui-v2.5.5/layui.all.js" charset="utf-8"></script>
+</head>
+<body>
+    <h2>地图采集参数</h2><h3>&nbsp;</h3>
+	<h3>小车控制</h3>
+    <div class="layui-form layuimini-form">
+        <div class="layui-form-item">
+            <label class="layui-form-label">起步线性速度:</label>
+            <div class="layui-input-inline" >
+                <input type="text" name="base_x" lay-verify="required" class="layui-input" value="0.0">
+            </div>
+	
+		<label class="layui-form-label">起步旋转速度:</label>
+	    <!--<div class="layui-input-block"  style="width:150px;">-->
+	    <div class="layui-input-inline"  >
+                <input type="text" name="base_z" lay-verify="required" class="layui-input" value="0.0">
+            </div>
+	</div>
+	<div class="layui-form-item">
+		<label class="layui-form-label">进退步长(stepX):</label>
+		<div class="layui-input-inline">
+			<input type ="number" id="step_x" name="step_x" min="-0.20" max="0.20" step="0.01" value=0.01  	class="div_input" /></div>
+	
+		<label class="layui-form-label">旋转步长(stepZ):</label>
+		<div class="layui-input-inline">
+			<input type ="number" id="step_z" name="step_z" min="-0.20" max="0.20" step="0.01" value=0.01  class="div_input" /></div>
+        </div>
+
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button id="confirm" class="layui-btn" lay-submit lay-filter="saveBtn">保存</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        //setPermanentCookie("step_?")
+        var step_x=getCookie("step_x") || '0.01';
+	var step_z=getCookie("step_z") || '0.01';
+	var base_x=getCookie("base_x") || '0.0';
+	var base_z=getCookie("base_z") || '0.0';
+
+        if (step_x== null || step_x == 'null'){ //it did equal to 'null'
+            step_x ='0.01';
+        }
+	if (step_z== null || step_z == 'null'){ //it did equal to 'null'
+            step_z ='0.01';
+        }
+	if (base_x== null || base_x == 'null'){ //it did equal to 'null'
+            base_x ='0.0';
+        }
+	if (base_z== null || base_z == 'null'){ //it did equal to 'null'
+            base_z ='0.0';
+        }
+        $('input[name=step_x]').val(step_x);
+        $('input[name=step_z]').val(step_z);
+	$('input[name=base_x]').val(base_x);
+        $('input[name=base_z]').val(base_z);//getQueryVariable("ws_address"));
+    </script>
+    <script>
+        layui.use(['form', 'layer'], function () {
+            //layui.use(['form', 'layedit', 'laydate', 'upload'], function () {
+            var form = layui.form,
+                layer = layui.layer,
+                //laydate = layui.laydate,
+                $ = layui.$;
+                //upload = layui.upload;
+
+            form.on('submit(saveBtn)', function (data) {
+                console.log(data.field);
+                var step_x=data.field["step_x"];
+                var step_z=data.field["step_z"];
+		var base_x=data.field["base_x"];
+                var base_z=data.field["base_z"];
+
+                try{
+                    setPermanentCookie("step_x",step_x);
+		    setPermanentCookie("step_z",step_z);
+			setPermanentCookie("base_x",base_x);
+		    setPermanentCookie("base_z",base_z);
+		    //update 不到主页,改parent
+                    //ws_address=ws_add;
+                    if (window.parent.load_global!=undefined){
+                        window.parent.load_global();
+                    }
+
+		    layer.msg("保存成功");
+                } catch (ex){
+                    layer.msg(ex.msg,{icon:6,time:3000});
+                }
+                //data.field["password"] = $.md5(data.field["password"]);
+                // $.ajax({
+                //     url: 'http://www.dn.cn:8448/User/UserLogin',
+                //     method: 'post',
+                //     data: data.field,
+                //     success: function (res) {
+                //         if (res.code == 0) {
+                //             layer.msg("新建成功:" + res.msg)
+                //         } else {
+                //             layer.msg(res.msg);
+                //         }
+                //     }
+                // })
+            })
+        });
+    </script>
+</body>
+</html>
+
